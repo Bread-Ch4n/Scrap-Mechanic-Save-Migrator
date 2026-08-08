@@ -1,6 +1,6 @@
 # Scrap Mechanic Save Migrator
 
-A tool for migrating **Scrap Mechanic saves** between different versions or environments.
+A tool for migrating **Scrap Mechanic Survival Saves** into **Fant Mod 3 Custom Gamemode Saves**
 
 ## 🌐 [Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)
 
