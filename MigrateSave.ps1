@@ -9,30 +9,8 @@ $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition }
 $sqliteBin = Join-Path $scriptDir "sqlite3.exe"
 
-# Global cache for Steam Display Names
+# Global cache for Steam Display Names to prevent redundant web calls
 $global:SteamNameCache = @{}
-
-# Load local Steam profile names from Steam's local loginusers.vdf file
-function Load-LocalSteamProfiles {
-    try {
-        $steamReg = Get-ItemProperty -Path "HKCU:\Software\Valve\Steam" -Name "SteamPath" -ErrorAction SilentlyContinue
-        if ($steamReg -and $steamReg.SteamPath) {
-            $vdfPath = Join-Path $steamReg.SteamPath "config\loginusers.vdf"
-            if (Test-Path $vdfPath) {
-                $vdfContent = Get-Content -Path $vdfPath -Raw -ErrorAction SilentlyContinue
-                $matches = [regex]::Matches($vdfContent, '"(\d{17})"\s*\{[\s\S]*?"PersonaName"\s*"([^"]+)"')
-                foreach ($m in $matches) {
-                    $id = $m.Groups[1].Value
-                    $name = $m.Groups[2].Value
-                    $global:SteamNameCache[$id] = "$name (User_$id)"
-                }
-            }
-        }
-    } catch { }
-}
-
-# Pre-populate local profile names on script start
-Load-LocalSteamProfiles
 
 # Helper function to fetch Steam Persona Name via Raw HTML Regex
 function Get-SteamPersonaName ([string]$steamId64) {
@@ -46,23 +24,11 @@ function Get-SteamPersonaName ([string]$steamId64) {
         $url = "https://steamcommunity.com/profiles/$steamId64"
         $headers = @{ "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" }
         $response = Invoke-WebRequest -Uri $url -Headers $headers -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
-        
         $html = $response.Content
 
-        # Match 1: Extract from <span class="actual_persona_name">...</span>
         if ($html -match 'class="actual_persona_name">([^<]+)</span>') {
             $persona = [System.Net.WebUtility]::HtmlDecode($Matches[1].Trim())
             if (-not [string]::IsNullOrWhiteSpace($persona)) {
-                $displayName = "$persona (User_$steamId64)"
-                $global:SteamNameCache[$steamId64] = $displayName
-                return $displayName
-            }
-        }
-
-        # Match 2: Extract from <title>Steam Community :: Name</title>
-        if ($html -match '<title>Steam Community :: ([^<]+)</title>') {
-            $persona = [System.Net.WebUtility]::HtmlDecode($Matches[1].Trim())
-            if (-not [string]::IsNullOrWhiteSpace($persona) -and $persona -ne "Error") {
                 $displayName = "$persona (User_$steamId64)"
                 $global:SteamNameCache[$steamId64] = $displayName
                 return $displayName
@@ -83,15 +49,15 @@ if (-not (Test-Path $sqliteBin)) {
     exit
 }
 
-# 2. Main Menu Loop (2-Step Selection with Single-User Failsafe)
+# 2. Main Menu Selection Flow
 function Show-SaveMenu {
     while ($true) {
         $userDir = "$env:APPDATA\Axolot Games\Scrap Mechanic\User"
         $rawItems = @()
 
         if (Test-Path $userDir) {
-            $rawItems = Get-ChildItem -Path "$userDir\User_*\Save\Survival" -Filter "*.db" -Recurse -ErrorAction SilentlyContinue |
-                        Where-Object { $_.Extension -eq ".db" }
+            $rawItems = @(Get-ChildItem -Path "$userDir\User_*\Save" -Filter "*.db" -Recurse -ErrorAction SilentlyContinue |
+                          Where-Object { $_.Extension -eq ".db" })
         }
 
         # Build list of save objects
@@ -105,49 +71,34 @@ function Show-SaveMenu {
                 $accName = "User_$($Matches[1])"
             }
 
+            $saveType = "Other"
+            if ($item.FullName -match '(?i)\\Save\\Survival\\') { $saveType = "Survival" }
+            elseif ($item.FullName -match '(?i)\\Save\\Custom\\') { $saveType = "Custom" }
+
             $saveObjects += [PSCustomObject]@{
                 Path    = $item.FullName
                 Name    = $item.Name
                 Account = $accName
+                Type    = $saveType
             }
         }
 
-        # If no saves found anywhere
-        if ($saveObjects.Count -eq 0) {
-            Clear-Host
-            Write-Host "=======================================================" -ForegroundColor Cyan
-            Write-Host "         Scrap Mechanic Fant Migration Tool" -ForegroundColor Cyan
-            Write-Host "                By Linus and Gemini" -ForegroundColor DarkCyan
-            Write-Host "=======================================================" -ForegroundColor Cyan
-            Write-Host ""
-            Write-Host "[!] No Survival save files found in standard AppData paths.`n" -ForegroundColor Yellow
-            Write-Host "  [O] Open the save game directory" -ForegroundColor White
-            Write-Host "  [M] Manual input / Drag & Drop a .db file`n" -ForegroundColor White
-
-            $choice = Read-Host "Select 'O' or 'M'"
-            if ($choice -eq 'O' -or $choice -eq 'o') {
-                if (Test-Path $userDir) { Start-Process explorer.exe -ArgumentList "`"$userDir`"" }
-                Read-Host "Press Enter to re-scan saves..."
-                continue
-            }
-            if ($choice -eq 'M' -or $choice -eq 'm') {
-                $rawInput = Read-Host "`nDrag and drop your .db save file here and press Enter"
-                $selectedPath = $rawInput.Trim('"').Trim("'")
-                if (Test-Path $selectedPath) { return $selectedPath }
-                Write-Host "`n[ERROR] Invalid file path!" -ForegroundColor Red
-                Read-Host "Press Enter to try again..."
-                continue
-            }
-            continue
-        }
-
-        # Group saves by Steam Account
-        $groupedUsers = $saveObjects | Group-Object Account
+        # STEP 1: USER SELECTION (Forced Array)
+        $groupedUsers = @($saveObjects | Group-Object Account)
         $selectedUserGroup = $null
 
-        # STEP 1: USER SELECTION (Auto-bypassed if only 1 user exists)
-        if ($groupedUsers.Count -eq 1) {
-            # FAILSAFE: Only 1 user exists on PC, skip user prompt
+        if ($groupedUsers.Count -eq 0) {
+            Write-Host "[!] No save files found in AppData.`n" -ForegroundColor Yellow
+            Write-Host "  picking a file will not touch the original file in any way" -ForegroundColor Gray
+            Write-Host "  every edit on the selected file will be done on a copy`n" -ForegroundColor Gray
+            $rawInput = Read-Host "Drag and drop a .db save file here and press Enter"
+            $dragPath = $rawInput.Trim('"').Trim("'")
+            if (Test-Path $dragPath) {
+                return @{ Path = $dragPath; Mode = "Custom" }
+            }
+            continue
+        } elseif ($groupedUsers.Count -eq 1) {
+            # FAILSAFE: Exactly 1 profile exists, automatically skip user selection menu
             $selectedUserGroup = $groupedUsers[0]
         } else {
             Clear-Host
@@ -156,35 +107,25 @@ function Show-SaveMenu {
             Write-Host "                By Linus and Gemini" -ForegroundColor DarkCyan
             Write-Host "=======================================================" -ForegroundColor Cyan
             Write-Host ""
-            Write-Host "Found $($groupedUsers.Count) Steam profiles with Survival save files:`n" -ForegroundColor Green
+            Write-Host "Found $($groupedUsers.Count) Steam profiles:`n" -ForegroundColor Green
 
             for ($u = 0; $u -lt $groupedUsers.Count; $u++) {
                 $usr = $groupedUsers[$u]
                 Write-Host "  [$($u+1)] $($usr.Name) " -NoNewline -ForegroundColor Yellow
-                Write-Host "($($usr.Count) save file(s))" -ForegroundColor Gray
+                Write-Host "($($usr.Count) total saves)" -ForegroundColor Gray
             }
 
             Write-Host ""
-            Write-Host "  [O] Open the save game directory" -ForegroundColor White
             Write-Host "  [M] Manual input / Drag & Drop a .db file`n" -ForegroundColor White
-            Write-Host "  picking a file will not touch the vanilla file in any way" -ForegroundColor Gray
+            Write-Host "  picking a file will not touch the original file in any way" -ForegroundColor Gray
             Write-Host "  every edit on the selected file will be done on a copy`n" -ForegroundColor Gray
 
-            $userChoice = Read-Host "Select a user profile number (1-$($groupedUsers.Count)), 'O', or 'M'"
-
-            if ($userChoice -eq 'O' -or $userChoice -eq 'o') {
-                $openDir = Split-Path $saveObjects[0].Path
-                if (Test-Path $openDir) { Start-Process explorer.exe -ArgumentList "`"$openDir`"" }
-                Read-Host "Press Enter to re-scan saves..."
-                continue
-            }
+            $userChoice = Read-Host "Select a user profile number (1-$($groupedUsers.Count)) or 'M'"
 
             if ($userChoice -eq 'M' -or $userChoice -eq 'm') {
                 $rawInput = Read-Host "`nDrag and drop your .db save file here and press Enter"
-                $selectedPath = $rawInput.Trim('"').Trim("'")
-                if (Test-Path $selectedPath) { return $selectedPath }
-                Write-Host "`n[ERROR] Invalid file path!" -ForegroundColor Red
-                Read-Host "Press Enter to try again..."
+                $dragPath = $rawInput.Trim('"').Trim("'")
+                if (Test-Path $dragPath) { return @{ Path = $dragPath; Mode = "Custom" } }
                 continue
             }
 
@@ -195,14 +136,10 @@ function Show-SaveMenu {
                 }
             }
 
-            if (-not $selectedUserGroup) {
-                Write-Host "`n[ERROR] Invalid profile selection!" -ForegroundColor Red
-                Read-Host "Press Enter to try again..."
-                continue
-            }
+            if (-not $selectedUserGroup) { continue }
         }
 
-        # STEP 2: SAVE FILE SELECTION (For selected user)
+        # STEP 2: MODE SELECTION (Vanilla Survival vs Custom Game)
         while ($true) {
             Clear-Host
             Write-Host "=======================================================" -ForegroundColor Cyan
@@ -210,105 +147,180 @@ function Show-SaveMenu {
             Write-Host "                By Linus and Gemini" -ForegroundColor DarkCyan
             Write-Host "=======================================================" -ForegroundColor Cyan
             Write-Host ""
-            Write-Host "Profile: $($selectedUserGroup.Name)" -ForegroundColor Green
-            Write-Host "Found $($selectedUserGroup.Count) Survival save file(s):`n" -ForegroundColor Gray
+            Write-Host "Selected Profile: $($selectedUserGroup.Name)" -ForegroundColor Green
+            Write-Host ""
 
-            $userSaves = $selectedUserGroup.Group
-            for ($s = 0; $s -lt $userSaves.Count; $s++) {
-                Write-Host "  [$($s+1)] $($userSaves[$s].Name)" -ForegroundColor Yellow
-            }
+            $survCount = @($selectedUserGroup.Group | Where-Object { $_.Type -eq "Survival" }).Count
+            $custCount = @($selectedUserGroup.Group | Where-Object { $_.Type -eq "Custom" }).Count
+
+            Write-Host "Select Conversion Mode:" -ForegroundColor White
+            Write-Host "  [1] Convert Vanilla Survival Save -> Fant Mod (from \Save\Survival\) " -NoNewline -ForegroundColor Yellow
+            Write-Host "($survCount save(s))" -ForegroundColor Gray
+
+            Write-Host "  [2] Convert Existing Custom Game Save -> Fant Mod (from \Save\Custom\) " -NoNewline -ForegroundColor Yellow
+            Write-Host "($custCount save(s))" -ForegroundColor Gray
+            Write-Host "      * Intended for converting smaller, Vanilla+ / QoL Custom Games to Fant Mod 3" -ForegroundColor DarkGray
+			Write-Host "        (meaning no custom games that add new things, only tweaks to stuff)" -ForegroundColor DarkGray
 
             Write-Host ""
             if ($groupedUsers.Count -gt 1) {
-                Write-Host "  [B] Back to user profile selection" -ForegroundColor Cyan
+                Write-Host "  [B] Back to user selection" -ForegroundColor Cyan
             }
-            Write-Host "  [O] Open the save game directory" -ForegroundColor White
             Write-Host "  [M] Manual input / Drag & Drop a .db file`n" -ForegroundColor White
-            Write-Host "  picking a file will not touch the vanilla file in any way" -ForegroundColor Gray
+            Write-Host "  picking a file will not touch the original file in any way" -ForegroundColor Gray
             Write-Host "  every edit on the selected file will be done on a copy`n" -ForegroundColor Gray
 
-            $promptText = "Select a save file number (1-$($userSaves.Count))"
-            if ($groupedUsers.Count -gt 1) { $promptText += ", 'B'" }
-            $promptText += ", 'O', or 'M'"
+            $modeChoice = Read-Host "Select mode (1 or 2)"
 
-            $saveChoice = Read-Host $promptText
-
-            if ($groupedUsers.Count -gt 1 -and ($saveChoice -eq 'B' -or $saveChoice -eq 'b')) {
-                break # Return to Step 1 (User Selection)
-            }
-
-            if ($saveChoice -eq 'O' -or $saveChoice -eq 'o') {
-                $openDir = Split-Path $userSaves[0].Path
-                if (Test-Path $openDir) { Start-Process explorer.exe -ArgumentList "`"$openDir`"" }
-                Read-Host "Press Enter to re-scan saves..."
+            if ($groupedUsers.Count -gt 1 -and ($modeChoice -eq 'B' -or $modeChoice -eq 'b')) {
                 break
             }
 
-            if ($saveChoice -eq 'M' -or $saveChoice -eq 'm') {
+            if ($modeChoice -eq 'M' -or $modeChoice -eq 'm') {
                 $rawInput = Read-Host "`nDrag and drop your .db save file here and press Enter"
-                $selectedPath = $rawInput.Trim('"').Trim("'")
-                if (Test-Path $selectedPath) { return $selectedPath }
-                Write-Host "`n[ERROR] Invalid file path!" -ForegroundColor Red
-                Read-Host "Press Enter to try again..."
+                $dragPath = $rawInput.Trim('"').Trim("'")
+                if (Test-Path $dragPath) { return @{ Path = $dragPath; Mode = "Custom" } }
                 continue
             }
 
-            if ($saveChoice -match '^\d+$') {
-                $sIdx = [int]$saveChoice - 1
-                if ($sIdx -ge 0 -and $sIdx -lt $userSaves.Count) {
-                    return $userSaves[$sIdx].Path
+            $selectedMode = $null
+            if ($modeChoice -eq '1') { $selectedMode = "Survival" }
+            elseif ($modeChoice -eq '2') { $selectedMode = "Custom" }
+
+            if (-not $selectedMode) { continue }
+
+            # Filter saves for this mode (Forced Array)
+            $filteredSaves = @($selectedUserGroup.Group | Where-Object { $_.Type -eq $selectedMode })
+
+            # STEP 3: SAVE FILE SELECTION
+            while ($true) {
+                Clear-Host
+                Write-Host "=======================================================" -ForegroundColor Cyan
+                Write-Host "         Scrap Mechanic Fant Migration Tool" -ForegroundColor Cyan
+                Write-Host "                By Linus and Gemini" -ForegroundColor DarkCyan
+                Write-Host "=======================================================" -ForegroundColor Cyan
+                Write-Host ""
+                Write-Host "Profile: $($selectedUserGroup.Name) | Mode: $selectedMode Save" -ForegroundColor Green
+
+                if ($filteredSaves.Count -eq 0) {
+                    Write-Host "`n[!] No $selectedMode save files found for this profile.`n" -ForegroundColor Yellow
+                    Read-Host "Press Enter to go back..."
+                    break
+                }
+
+                Write-Host "Found $($filteredSaves.Count) save file(s):`n" -ForegroundColor Gray
+                for ($s = 0; $s -lt $filteredSaves.Count; $s++) {
+                    Write-Host "  [$($s+1)] $($filteredSaves[$s].Name)" -ForegroundColor Yellow
+                }
+
+                Write-Host "`n  [B] Back to conversion mode selection" -ForegroundColor Cyan
+                Write-Host "  [M] Manual input / Drag & Drop a .db file`n" -ForegroundColor White
+				Write-Host ""
+                Write-Host "  picking a file will not touch the original file in any way" -ForegroundColor Gray
+                Write-Host "  every edit on the selected file will be done on a copy`n" -ForegroundColor Gray
+
+                $saveChoice = Read-Host "Select a save file number (1-$($filteredSaves.Count))"
+
+                if ($saveChoice -eq 'B' -or $saveChoice -eq 'b') {
+                    break
+                }
+
+                if ($saveChoice -eq 'M' -or $saveChoice -eq 'm') {
+                    $rawInput = Read-Host "`nDrag and drop your .db save file here and press Enter"
+                    $dragPath = $rawInput.Trim('"').Trim("'")
+                    if (Test-Path $dragPath) { return @{ Path = $dragPath; Mode = $selectedMode } }
+                    continue
+                }
+
+                if ($saveChoice -match '^\d+$') {
+                    $sIdx = [int]$saveChoice - 1
+                    if ($sIdx -ge 0 -and $sIdx -lt $filteredSaves.Count) {
+                        return @{ Path = $filteredSaves[$sIdx].Path; Mode = $selectedMode }
+                    }
                 }
             }
-
-            Write-Host "`n[ERROR] Invalid save selection!" -ForegroundColor Red
-            Read-Host "Press Enter to try again..."
         }
     }
 }
 
-$sourceSave = Show-SaveMenu
+$selection = Show-SaveMenu
+$sourceSave = $selection.Path
+$conversionMode = $selection.Mode
 
 Write-Host "`nSource Save: `"$sourceSave`"" -ForegroundColor Cyan
 
-# 3. Copy save file to Custom directory safely per Steam Profile
-Write-Host "`n[1/3] Copying save to Custom folder..." -ForegroundColor Gray
+# 3. Setup Temporary Working Directory in Script CD
+Write-Host "`n[1/3] Copying save to local temp working directory..." -ForegroundColor Gray
 
-$targetSave = $sourceSave
-if ($sourceSave -match '(?i)\\Save\\Survival\\') {
-    $targetSave = [regex]::Replace($sourceSave, '(?i)\\Save\\Survival\\', '\Save\Custom\')
-    $targetDir = Split-Path $targetSave
-    if (-not (Test-Path $targetDir)) {
-        New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
-    }
-    Copy-Item -Path $sourceSave -Destination $targetSave -Force
-    Write-Host "   Save copied to: `"$targetSave`"" -ForegroundColor Green
-    Write-Host "   Original Survival save left untouched in Survival folder.`n" -ForegroundColor DarkGray
-} else {
-    Write-Host "   File is outside standard Survival folder. Creating backup copy (.db.bak)..." -ForegroundColor Yellow
-    Copy-Item -Path $sourceSave -Destination "$sourceSave.bak" -Force
-}
+$tempWorkDir = Join-Path $scriptDir "temp_migrate"
+if (Test-Path $tempWorkDir) { Remove-Item $tempWorkDir -Recurse -Force | Out-Null }
+New-Item -ItemType Directory -Path $tempWorkDir -Force | Out-Null
 
-# 4. Execute Core SQL Migration
-Write-Host "[2/3] Executing SQL Database Migration..." -ForegroundColor Gray
+$tempSaveFile = Join-Path $tempWorkDir "working_save.db"
+Copy-Item -Path $sourceSave -Destination $tempSaveFile -Force
+Write-Host "   Working copy created at: `"$tempSaveFile`"" -ForegroundColor DarkGray
 
+# 4. Execute Flag-Based SQL Migration on Temp File
+Write-Host "`n[2/3] Executing SQL Database Migration..." -ForegroundColor Gray
+
+# Step A: Update ScriptData GUID to Fant Mod 3
 $tempSql = Join-Path $env:TEMP "sm_migrate_temp.sql"
 $sqlQueries = @"
-UPDATE Game SET flags = 15, mods = X'0000000100000000E0E1EF6B5C6453510B28F576470573F9A9361B19' WHERE savegameversion = 28 AND flags = 14 AND mods = X'00000000';
 UPDATE ScriptData SET uid = X'B6E35C9767BF5555A519A066E14A8C1E' WHERE uid = X'2C3699B2FD9C503EA405CF73434E2E88';
 UPDATE ScriptData SET data = X'B6E35C9767BF5555A519A066E14A8C1E' || SUBSTR(data, 17) WHERE uid = X'B6E35C9767BF5555A519A066E14A8C1E' AND SUBSTR(data, 1, 16) = X'2C3699B2FD9C503EA405CF73434E2E88';
 "@
-
 Set-Content -Path $tempSql -Value $sqlQueries -Encoding UTF8
-Get-Content $tempSql | & $sqliteBin "$targetSave"
+Get-Content $tempSql | & $sqliteBin "$tempSaveFile"
 if (Test-Path $tempSql) { Remove-Item $tempSql }
 
-Write-Host "   SQL Migration applied successfully.`n" -ForegroundColor Green
-
-# 5. Scan and Rebuild Container BLOBs
-Write-Host "[3/3] Scanning and Rebuilding Player Inventory Containers..." -ForegroundColor Gray
+# Step B: Check original Game.flags before setting flag 15
+# Exact 24-byte (48 hex char) UGC Item for Fant Mod 3
+$fantUgcItemHex = "00000000E0E1EF6B5C6453510B28F576470573F9A9361B19" 
 
 try {
-    $rows = & $sqliteBin "$targetSave" "SELECT id, hex(data) FROM Container;"
+    $gameRow = & $sqliteBin "$tempSaveFile" "SELECT flags, hex(mods) FROM Game LIMIT 1;"
+    if ($gameRow -and $gameRow -match '^\s*(\d+)\|(.*)$') {
+        $origFlags = [int]$Matches[1]
+        $existingModsHex = $Matches[2].Trim()
+
+        if ([string]::IsNullOrWhiteSpace($existingModsHex) -or $existingModsHex -eq "00000000" -or $existingModsHex.Length -lt 8) {
+            # Empty / No mods -> Standard 1-Mod Array
+            $newModsHex = "00000001" + $fantUgcItemHex
+        } else {
+            $countHex = $existingModsHex.Substring(0, 8)
+            $payload  = $existingModsHex.Substring(8)
+            $modCount = [System.Convert]::ToUInt32($countHex, 16)
+
+            if ($origFlags -eq 15 -and $payload.Length -ge 48) {
+                # WAS A CUSTOM GAME SAVE (flags = 15): Overwrite Slot 0 (old Custom Game Mode)
+                $secondaryModsHex = $payload.Substring(48)
+                $newModsHex = $countHex + $fantUgcItemHex + $secondaryModsHex
+                Write-Host "   Custom Game save detected (flags=15): Replaced primary game mode UUID." -ForegroundColor Green
+            } else {
+                # WAS A SURVIVAL SAVE (flags = 14): Prepend Fant Mod so NO B&P mods are lost
+                if ($payload -notlike "*$fantUgcItemHex*") {
+                    $newCountHex = ($modCount + 1).ToString("X8")
+                    $newModsHex  = $newCountHex + $fantUgcItemHex + $payload
+                    Write-Host "   Survival save detected (flags=14): Prepend Fant Mod (+1 count, preserved all $modCount B&P mods)." -ForegroundColor Green
+                } else {
+                    $newModsHex = $existingModsHex
+                }
+            }
+        }
+
+        # Set flags = 15 and write updated mod payload
+        & $sqliteBin "$tempSaveFile" "UPDATE Game SET flags = 15, savegameversion = 28, mods = x'$newModsHex';"
+    }
+} catch {
+    Write-Host "   [!] Failed to parse Game table. Applied default Fant Mod linkage." -ForegroundColor Yellow
+    & $sqliteBin "$tempSaveFile" "UPDATE Game SET flags = 15, savegameversion = 28, mods = x'00000001$fantUgcItemHex';"
+}
+
+# 5. Scan and Rebuild Container BLOBs on Temp File
+Write-Host "`n[3/3] Scanning and Rebuilding Player Inventory Containers..." -ForegroundColor Gray
+
+try {
+    $rows = @(& $sqliteBin "$tempSaveFile" "SELECT id, hex(data) FROM Container;")
 } catch {
     Write-Host "[ERROR] Failed to query Container table: $_" -ForegroundColor Red
     Read-Host "Press Enter to exit..."
@@ -318,7 +330,7 @@ try {
 if (-not $rows) {
     Write-Host "   [!] Container table is empty." -ForegroundColor Yellow
 } else {
-    $rowCount = ($rows | Measure-Object).Count
+    $rowCount = $rows.Count
     Write-Host "   Total containers scanned: $rowCount" -ForegroundColor Cyan
     $updatedCount = 0
 
@@ -339,7 +351,6 @@ if (-not $rows) {
             continue
         }
 
-        # Match ONLY 40-slot player containers (ignoring 30-slot world chests)
         if ($currentSize -eq 40) {
             Write-Host "   [MATCH] Player Inventory ID $id detected (40 slots) -> Expanding to 60 slots..." -ForegroundColor Yellow
             
@@ -350,10 +361,7 @@ if (-not $rows) {
             $itemsLen = $currentSize * 44
             $requiredLen = 22 + $itemsLen
 
-            if ($requiredLen -gt $hex.Length) {
-                Write-Host "      [ERROR] Container ID $id offset overflow! Skipping!" -ForegroundColor Red
-                continue
-            }
+            if ($requiredLen -gt $hex.Length) { continue }
 
             $items = $hex.Substring(22, $itemsLen)
             $emptySlot = "00000000000000000000000000000000ffffffff0000"
@@ -364,7 +372,7 @@ if (-not $rows) {
             $patchedHex = $header + $newSizeHex + $stackSize + $items + $padding + $tail
             $updateSql = "UPDATE Container SET data = x'$patchedHex' WHERE id = $id;"
 
-            & $sqliteBin "$targetSave" "$updateSql"
+            & $sqliteBin "$tempSaveFile" "$updateSql"
             Write-Host "      [+] SUCCESS: Expanded Container ID $id to 60 slots!" -ForegroundColor Green
             $updatedCount++
         }
@@ -372,7 +380,24 @@ if (-not $rows) {
     Write-Host "`n   Operation Complete. Total player inventories expanded: $updatedCount" -ForegroundColor Cyan
 }
 
-# 6. Final Status
+# 6. Output Target Placement
+if ($conversionMode -eq "Custom") {
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($sourceSave)
+    $targetDir = Split-Path $sourceSave
+    $targetSave = Join-Path $targetDir "$baseName - fant mod.db"
+} else {
+    $targetSave = [regex]::Replace($sourceSave, '(?i)\\Save\\Survival\\', '\Save\Custom\')
+    $targetDir = Split-Path $targetSave
+}
+
+if (-not (Test-Path $targetDir)) {
+    New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+}
+
+Copy-Item -Path $tempSaveFile -Destination $targetSave -Force
+Remove-Item $tempWorkDir -Recurse -Force | Out-Null
+
+# 7. Final Status
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "  SUCCESS! Save migrated and placed in Custom Game menu." -ForegroundColor Green
 Write-Host "  Credits to `"taswin`" on the fant mod discord for" -ForegroundColor Green

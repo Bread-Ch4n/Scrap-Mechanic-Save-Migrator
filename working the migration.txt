@@ -1,0 +1,3 @@
+run the script from the bat file, not the PS1 file for this to work as it should, then just follow the instructions and press keys
+
+the scripts can be put in any folder on your computer, it also takes for granted you havent fucked with the file system and have your savegames elsewhere, if you do, use manual mode
