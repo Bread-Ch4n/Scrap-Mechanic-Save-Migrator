@@ -63,6 +63,42 @@
             text-transform: none;
         }
 
+        .version-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .version-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 13px;
+            border: 1px solid #45484f;
+            border-radius: 6px;
+            background: linear-gradient(#3a3d44, #2a2d33);
+            color: #eef0f2;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.7px;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .version-button:hover {
+            border-color: #f6cc3a;
+            background: linear-gradient(#4a4d54, #303338);
+            color: #f6cc3a;
+        }
+
+        .version-button svg {
+            width: 15px;
+            height: 15px;
+            fill: currentColor;
+        }
+
         .body {
             padding: 18px;
             background: linear-gradient(#f6cc3a, #e2ac16);
@@ -233,9 +269,24 @@
 <body>
 
 <div class="panel">
-    <div class="header">
-        Save Migrator
-        <span class="sub">Survival &rarr; Fant Mod 3 Custom Gamemode</span>
+    <div class="header"> Save Migrator <span class="sub">Survival &rarr; Fant Mod 3 Custom Gamemode</span>
+        <div class="version-buttons"><a class="version-button"
+                                        href="https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows"
+                                        rel="noopener noreferrer" target="_blank">
+            <svg aria-hidden="true" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+                <path d="M96 96L310.6 96L310.6 310.6L96 310.6L96 96zM329.4 96L544 96L544 310.6L329.4 310.6L329.4 96zM96 329.4L310.6 329.4L310.6 544L96 544L96 329.4zM329.4 329.4L544 329.4L544 544L329.4 544L329.4 329.4z"/>
+            </svg>
+            Windows </a> <a class="version-button"
+                            href="https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux"
+                            rel="noopener noreferrer"
+                            target="_blank">
+
+            <svg aria-hidden="true" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+                <path d="M316.9 187.3C317.9 187.8 318.7 189 319.9 189C321 189 322.7 188.6 322.8 187.5C323 186.1 320.9 185.2 319.6 184.6C317.9 183.9 315.7 183.6 314.1 184.5C313.7 184.7 313.3 185.2 313.5 185.6C313.8 186.9 315.8 186.7 316.9 187.3zM295 189C296.2 189 297 187.8 298 187.3C299.1 186.7 301.1 186.9 301.5 185.7C301.7 185.3 301.3 184.8 300.9 184.6C299.3 183.7 297.1 184 295.4 184.7C294.1 185.3 292 186.2 292.2 187.6C292.3 188.6 294 189.1 295 189zM516 467.8C512.4 463.8 510.7 456.2 508.8 448.1C507 440 504.9 431.3 498.3 425.7C497 424.6 495.7 423.6 494.3 422.8C493 422 491.6 421.3 490.2 420.8C499.4 393.5 495.8 366.3 486.5 341.7C475.1 311.6 455.2 285.3 440 267.3C422.9 245.8 406.3 225.4 406.6 195.3C407.1 149.4 411.7 64.1 330.8 64C228.4 63.8 254 167.4 252.9 199.2C251.2 222.6 246.5 241 230.4 263.9C211.5 286.4 184.9 322.7 172.3 360.6C166.3 378.5 163.5 396.7 166.1 413.9C159.6 419.7 154.7 428.6 149.5 434.1C145.3 438.4 139.2 440 132.5 442.4C125.8 444.8 118.5 448.4 114 456.9C111.9 460.8 111.2 465 111.2 469.3C111.2 473.2 111.8 477.2 112.4 481.1C113.6 489.2 114.9 496.8 113.2 501.9C108 516.3 107.3 526.3 111 533.6C114.8 540.9 122.4 544.1 131.1 545.9C148.4 549.5 171.9 548.6 190.4 558.4C210.2 568.8 230.3 572.5 246.3 568.8C257.9 566.2 267.4 559.2 272.2 548.6C284.7 548.5 298.5 543.2 320.5 542C335.4 540.8 354.1 547.3 375.6 546.1C376.2 548.4 377 550.7 378.1 552.8L378.1 552.9C386.4 569.6 401.9 577.2 418.4 575.9C435 574.6 452.5 564.9 466.7 548C480.3 531.6 502.7 524.8 517.6 515.8C525 511.3 531 505.7 531.5 497.5C531.9 489.3 527.1 480.2 516 467.8zM319.8 151.3C329.6 129.1 354 129.5 363.8 150.9C370.3 165.1 367.4 181.8 359.5 191.3C357.9 190.5 353.6 188.7 346.9 186.4C348 185.2 350 183.7 350.8 181.8C355.6 170 350.6 154.8 341.7 154.5C334.4 154 327.8 165.3 329.9 177.5C325.8 175.5 320.5 174 316.9 173.1C315.9 166.2 316.6 158.5 319.8 151.3zM279.1 139.8C289.2 139.8 299.9 154 298.2 173.3C294.7 174.3 291.1 175.8 288 177.9C289.2 169 284.7 157.8 278.4 158.3C270 159 268.6 179.5 276.6 186.4C277.6 187.2 278.5 186.2 270.7 191.9C255.1 177.3 260.2 139.8 279.1 139.8zM265.5 200.5C271.7 195.9 279.1 190.5 279.6 212.2C355.2 219.3 355.5 226.6 343.8 230.3C332.7 233.9 324 246.3 305.6 245.2C301.7 245 298.6 244.2 296 243.1C288 239.6 283.8 232.7 276 228.1C267.4 223.3 262.8 217.7 261.3 212.8C259.9 207.9 261.3 203.8 265.5 200.5z"/>
+            </svg>
+
+
+            Linux </a></div>
     </div>
 
     <div class="body">
@@ -377,7 +428,9 @@
             const tail = hex.substring(tailIndex);
             const patchedHex = header + newSizeHex + stackSize + items + padding + tail;
 
-            db.run(`UPDATE Container SET data = X'${patchedHex}' WHERE id = ${Number(id)};`);
+            db.run(`UPDATE Container
+                    SET data = X'${patchedHex}'
+                    WHERE id = ${Number(id)};`);
             updated++;
         }
 
