@@ -1,3 +1,2 @@
 # Scrap Mechanic Save Migrator
-
-I'll try to add support for more custom games if the future maybe.
+https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/
