@@ -22,9 +22,9 @@ A tool for migrating **Scrap Mechanic saves** between different versions or envi
 
 ### Usage
 
-1. Open the **Windows Version** repository.
+1. Open the **[Windows Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows)** repository.
 2. Click the green **Code** button.
-3. Select **Download ZIP**.
+3. Select **Download ZIP** or press [here](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/archive/refs/heads/windows.zip).
 4. Extract the downloaded ZIP file.
 5. Run `migrate.bat`.
 6. Follow the instructions provided by the migration tool.
@@ -45,9 +45,9 @@ The Windows version was made by **[Linus (bicheslovesticks)](https://discord.com
 
 #### Option 1 — Download the repository
 
-1. Open the **Linux Version** repository.
+1. Open the **[Linux Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux)** repository.
 2. Click the green **Code** button.
-3. Select **Download ZIP**.
+3. Select **Download ZIP** or press [here](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/archive/refs/heads/linux.zip).
 4. Extract the downloaded ZIP file.
 5. Open a terminal in the extracted folder.
 6. Run:
