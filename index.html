@@ -341,6 +341,49 @@
            AND SUBSTR(data, 1, 16) = X'2C3699B2FD9C503EA405CF73434E2E88';`
     ];
 
+    function migrateInventory(db) {
+        const result = db.exec('SELECT id, hex(data) FROM Container;');
+        if (!result.length || !result[0].values.length) {
+            return {scanned: 0, updated: 0};
+        }
+
+        const rows = result[0].values;
+        let updated = 0;
+
+        for (const row of rows) {
+            if (!row || row.length < 2 || row[1] == null) continue;
+
+            const id = row[0];
+            const hex = String(row[1]);
+            if (hex.length < 22) continue;
+
+            const sizeHex = hex.substring(14, 18);
+            const currentSize = parseInt(sizeHex, 16);
+            if (!Number.isFinite(currentSize) || currentSize !== 40) continue;
+
+            const neededSlots = 60 - currentSize;
+            const header = hex.substring(0, 14);
+            const newSizeHex = '003C';
+            const stackSize = hex.substring(18, 22);
+            const itemsLen = currentSize * 44;
+            const requiredLen = 22 + itemsLen;
+
+            if (requiredLen > hex.length) continue;
+
+            const items = hex.substring(22, 22 + itemsLen);
+            const emptySlot = '00000000000000000000000000000000ffffffff0000';
+            const padding = emptySlot.repeat(neededSlots);
+            const tailIndex = 22 + itemsLen;
+            const tail = hex.substring(tailIndex);
+            const patchedHex = header + newSizeHex + stackSize + items + padding + tail;
+
+            db.run(`UPDATE Container SET data = X'${patchedHex}' WHERE id = ${Number(id)};`);
+            updated++;
+        }
+
+        return {scanned: rows.length, updated};
+    }
+
     runBtn.onclick = async () => {
         log.innerHTML = 'Loading SQLite engine...';
         try {
@@ -353,6 +396,11 @@
                 const changes = db.getRowsModified();
                 output += `SQL command ran, rows affected: ${changes}\n`;
             }
+
+            output += '\nRebuilding player inventory containers...\n';
+            const inventory = migrateInventory(db);
+            output += `Containers scanned: ${inventory.scanned}\n`;
+            output += `Player inventories expanded to 60 slots: ${inventory.updated}\n`;
 
             const bytes = db.export();
             const blob = new Blob([bytes], {type: 'application/octet-stream'});
