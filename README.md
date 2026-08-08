@@ -1,7 +1,5 @@
 # Scrap Mechanic Save Migrator
 
-## Versions
-
 ### 🌐 Web Version
 
 https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/
