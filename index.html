@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Survival to Fant Mod 3 Custom Gamemode Save Migrator</title>
+    <script data-bun-ignore src="sql-wasm.js" type="text/javascript"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 24px;
+            background: #14161a;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        .panel {
+            width: 100%;
+            max-width: 640px;
+            overflow: hidden;
+            border: 1px solid #000;
+            border-radius: 10px;
+            background: #1b1e24;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        .header {
+            position: relative;
+            padding: 20px 10px 16px;
+            border-bottom: 3px solid #f6cc3a;
+            background: repeating-linear-gradient(
+                    135deg,
+                    #14161a,
+                    #14161a 10px,
+                    #1b1e24 10px,
+                    #1b1e24 20px
+            );
+            color: #f6cc3a;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .header .sub {
+            display: block;
+            margin-top: 5px;
+            color: #c3c8d1;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: none;
+        }
+
+        .body {
+            padding: 18px;
+            background: linear-gradient(#f6cc3a, #e2ac16);
+        }
+
+        .step {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 16px;
+            border: 1px solid #45484f;
+            border-top-color: #45484f;
+            border-bottom-color: #17181c;
+            border-radius: 7px;
+            background: linear-gradient(#3a3d44, #2a2d33);
+        }
+
+        .step-num {
+            flex: 0 0 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #14161a;
+            border-radius: 6px;
+            background: #2b2e34;
+            color: #f6cc3a;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .step-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .step-body p {
+            margin: 0 0 10px 0;
+            color: #eef0f2;
+            font-size: 13.5px;
+            line-height: 1.35;
+        }
+
+        code.path {
+            display: block;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            border: 1px solid #45484f;
+            border-radius: 6px;
+            background: #14161a;
+            color: #c3c8d1;
+            font-size: 11.5px;
+            word-break: break-all;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid #14161a;
+            border-radius: 6px;
+            background: linear-gradient(#f6cc3a, #e2ac16);
+            color: #241c11;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: filter 0.15s;
+        }
+
+        button:hover:not(:disabled) {
+            filter: brightness(1.08);
+        }
+
+        button:disabled {
+            border-color: #14161a;
+            background: #52565e;
+            color: #9aa0aa;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: linear-gradient(#4a4d54, #303338);
+            color: #eef0f2;
+        }
+
+        #drop {
+            padding: 30px 16px;
+            border: 2px dashed #14161a;
+            border-radius: 7px;
+            background: #14161a;
+            color: #c3c8d1;
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        #drop.hover {
+            background: #241c11;
+        }
+
+        #runBtn {
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        #log {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border: 1px solid #45484f;
+            border-radius: 6px;
+            background: #14161a;
+            color: #c3c8d1;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        #log:empty {
+            display: none;
+        }
+
+        .err {
+            color: #ff6b6b;
+        }
+
+        .ok {
+            color: #ffd873;
+        }
+
+        .footer {
+            padding: 10px;
+            background: #14161a;
+            color: #7d838c;
+            font-size: 10.5px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .footer strong {
+            color: #f6cc3a;
+            letter-spacing: normal;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            border: 1px solid #f6cc3a;
+            border-radius: 6px;
+            background: #14161a;
+            color: #f6cc3a;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel">
+    <div class="header">
+        Save Migrator
+        <span class="sub">Survival &rarr; Fant Mod 3 Custom Gamemode</span>
+    </div>
+
+    <div class="body">
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+                <p>Find your Survival save.</p>
+                <code class="path">%appdata%\Axolot Games\Scrap
+                    Mechanic\User\User_XXXXXXXXXXXXXXXXXXXXXXX\Save\Survival\</code>
+                <button class="secondary" onclick="copyPath('%appdata%\\Axolot Games\\Scrap Mechanic\\User\\')">
+                    Copy path
+                </button>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+                <p>Drop the save .db file below to migrate it.</p>
+                <div id="drop">Drop your save .db file here, or click to choose</div>
+                <input id="fileInput" style="display:none" type="file">
+                <button disabled id="runBtn">Migrate &amp; download</button>
+                <div id="log"></div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+                <p>After downloading the migrated save move it to the Custom save folder.</p>
+                <code class="path">%appdata%\Axolot Games\Scrap
+                    Mechanic\User\User_XXXXXXXXXXXXXXXXXXXXXXX\Save\Custom\</code>
+                <button class="secondary" onclick="copyPath('%appdata%\\Axolot Games\\Scrap Mechanic\\User\\')">
+                    Copy path
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">Credits to <strong>taswin</strong> on discord for finding the migration process</div>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('fileInput');
+    const runBtn = document.getElementById('runBtn');
+    const log = document.getElementById('log');
+    const toast = document.getElementById('toast');
+
+    let fileBuffer = null;
+    let fileName = 'patched.db';
+
+    function copyPath(path) {
+        navigator.clipboard.writeText(path);
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1400);
+    }
+
+    drop.onclick = () => fileInput.click();
+
+    drop.ondragover = e => {
+        e.preventDefault();
+        drop.classList.add('hover');
+    };
+
+    drop.ondragleave = () => drop.classList.remove('hover');
+
+    drop.ondrop = e => {
+        e.preventDefault();
+        drop.classList.remove('hover');
+        if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    };
+
+    fileInput.onchange = () => {
+        if (fileInput.files.length) loadFile(fileInput.files[0]);
+    };
+
+    function loadFile(file) {
+        fileName = file.name.replace(/\.db$/i, '') + '_migrated.db';
+        const reader = new FileReader();
+        reader.onload = () => {
+            fileBuffer = new Uint8Array(reader.result);
+            drop.textContent = 'Loaded: ' + file.name + ' (' + fileBuffer.length + ' bytes)';
+            runBtn.disabled = false;
+            log.textContent = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    const SQL_STATEMENTS = [
+        `UPDATE Game
+         SET flags = 15,
+             mods  = X'0000000100000000E0E1EF6B5C6453510B28F576470573F9A9361B19'
+         WHERE savegameversion = 28
+           AND flags = 14
+           AND mods = X'00000000';`,
+        `UPDATE ScriptData
+         SET uid  = X'B6E35C9767BF5555A519A066E14A8C1E',
+             data = X'B6E35C9767BF5555A519A066E14A8C1E' || SUBSTR(data, 17)
+         WHERE uid = X'2C3699B2FD9C503EA405CF73434E2E88'
+           AND SUBSTR(data, 1, 16) = X'2C3699B2FD9C503EA405CF73434E2E88';`
+    ];
+
+    runBtn.onclick = async () => {
+        log.innerHTML = 'Loading SQLite engine...';
+        try {
+            const SQL = await initSqlJs({locateFile: f => f});
+            const db = new SQL.Database(fileBuffer);
+
+            let output = '';
+            for (const stmt of SQL_STATEMENTS) {
+                db.run(stmt);
+                const changes = db.getRowsModified();
+                output += `SQL command ran, rows affected: ${changes}\n`;
+            }
+
+            const bytes = db.export();
+            const blob = new Blob([bytes], {type: 'application/octet-stream'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            log.innerHTML = '<span class="ok">' + output + '\nDone. Download started: ' + fileName + '</span>';
+            db.close();
+        } catch (e) {
+            log.innerHTML = '<span class="err">Error: ' + e.message + '</span>';
+        }
+    };
+</script>
+
+</body>
+</html>
