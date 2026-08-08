@@ -1,25 +1,69 @@
 # Scrap Mechanic Save Migrator
 
-### 🌐 Web Version
+A tool for migrating **Scrap Mechanic saves** between different versions or environments.
 
-https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/
+## 🌐 [Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)
 
-**Requires:**
-- No requirements
+**No installation required.**
 
-### 🪟 Windows Version
+[Open the Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)
 
-https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows
+### Requirements
 
-**Requires:**
-- Powershell
-Made by: [Linus ( bicheslovesticks )](https://discord.com/users/278861825477574656) from fant mod discord server.
+* None
 
-### 🐧 Linux Version
+---
 
-https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux
+## 🪟 [Windows Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows)
 
-**Requires:**
-- `bash`
-- `python3`
-- `curl`
+### Requirements
+
+* PowerShell
+
+### Usage
+
+1. Open the **Windows Version** repository.
+2. Click the green **Code** button.
+3. Select **Download ZIP**.
+4. Extract the downloaded ZIP file.
+5. Run `migrate.bat`.
+6. Follow the instructions provided by the migration tool.
+
+The Windows version was made by **[Linus (bicheslovesticks)](https://discord.com/users/278861825477574656)** from the Fant Mod Discord server.
+
+---
+
+## 🐧 [Linux Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux)
+
+### Requirements
+
+* `bash`
+* `python3`
+* `curl`
+
+### Usage
+
+#### Option 1 — Download the repository
+
+1. Open the **Linux Version** repository.
+2. Click the green **Code** button.
+3. Select **Download ZIP**.
+4. Extract the downloaded ZIP file.
+5. Open a terminal in the extracted folder.
+6. Run:
+
+```bash
+bash migrate.sh
+```
+
+7. Follow the instructions provided by the migration tool.
+
+#### Option 2 — Run directly
+
+You can run the migration tool without downloading or cloning the repository:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/linux/migrate.sh)
+```
+
+Follow the instructions provided by the migration tool.
