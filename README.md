@@ -2,6 +2,8 @@
 
 A tool for migrating **Scrap Mechanic Survival Saves** into **Fant Mod 3 Custom Gamemode Saves**
 
+The SQL editing part was found by [taswin](https://discord.com/users/136620038516899840)
+
 ## 🌐 [Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)
 
 **No installation required.**
