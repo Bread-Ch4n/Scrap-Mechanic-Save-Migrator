@@ -146,8 +146,7 @@ try:
         SET flags = 15,
             mods = X'0000000100000000E0E1EF6B5C6453510B28F576470573F9A9361B19'
         WHERE savegameversion = 28
-          AND flags = 14
-          AND mods = X'00000000';
+          AND flags = 14;
     """)
 
     game_rows = cursor.rowcount
