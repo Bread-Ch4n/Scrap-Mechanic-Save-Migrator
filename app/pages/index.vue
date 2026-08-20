@@ -160,6 +160,39 @@
           </div>
         </div>
       </Stepper>
+      <footer
+        class="flex flex-col items-center justify-center text-sm-yellow gap-1 pb-1"
+      >
+        <p class="m-0">
+          OS native versions available in the GitHub
+          <a
+            class="underline"
+            href="https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator"
+            rel="noopener noreferrer"
+            target="_blank"
+            ><strong>README</strong></a
+          >
+        </p>
+        <p class="m-0">
+          Made by
+          <a
+            class="underline"
+            href="https://github.com/Bread-Ch4n"
+            rel="noopener noreferrer"
+            target="_blank"
+            ><strong>Bread-Chan</strong></a
+          >
+          with ❤︎ · Credits to
+          <a
+            class="underline"
+            href="https://discord.com/users/136620038516899840"
+            rel="noopener noreferrer"
+            target="_blank"
+            ><strong>taswin</strong></a
+          >
+          for finding the migration process
+        </p>
+      </footer>
     </div>
   </div>
 </template>
