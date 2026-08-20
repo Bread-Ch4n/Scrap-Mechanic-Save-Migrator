@@ -1,0 +1,53 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+    --color-sm-ink: #e8e6df;
+    --color-sm-ink-dim: #8a8a82;
+    --color-sm-bg: #14140f;
+    --color-sm-panel: #1c1c15;
+    --color-sm-yellow: #f2c14e;
+    --color-sm-orange: #d9762b;
+    --color-sm-line: #33332a;
+}
+
+body {
+    margin: 0;
+    background: var(--color-sm-bg);
+    color: white
+}
+
+.card {
+    width: min(900px, 100%);
+    background: var(--color-sm-bg);
+    border: 1px solid var(--color-sm-line);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.header {
+    padding: 20px 10px 16px;
+    border-bottom: 1px solid var(--color-sm-yellow);
+    background: repeating-linear-gradient(
+            135deg,
+            var(--color-sm-bg),
+            var(--color-sm-bg) 10px,
+            var(--color-sm-panel) 10px,
+            var(--color-sm-panel) 20px
+    );
+    color: var(--color-sm-yellow);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.step-content {
+    padding: 20px 0;
+}
+
+.game-info {
+    margin-top: 16px;
+    color: #fff;
+}
