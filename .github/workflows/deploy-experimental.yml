@@ -1,0 +1,24 @@
+name: Deploy Experimental to GitHub Pages
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - web-experimental
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: NUXT_APP_BASE_URL=/${{ github.event.repository.name }}/experimental/ bunx nuxt build --preset github_pages
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./.output/public
+          destination_dir: experimental
+          keep_files: true
