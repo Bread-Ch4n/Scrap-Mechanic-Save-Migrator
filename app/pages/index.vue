@@ -208,6 +208,7 @@ import { MoveRight } from "@lucide/vue";
 import type { Database } from "sql.js";
 import { computed, ref } from "vue";
 import initSqlJs from "sql.js";
+import LZ4 from "lz4js";
 
 const logs = ref<string[]>([]);
 const db = ref<Database | null>(null);
@@ -251,13 +252,12 @@ const migrate = () => {
 
     db.value.run(`
       UPDATE Game
-      SET flags = 15,
+      SET flags = ${target.extra?.flags ?? 15},
           mods = X'${target.mods}'
       WHERE savegameversion = 28;
     `);
 
     const gameRows = db.value.getRowsModified();
-
     log(`Game: ${gameRows} row${gameRows === 1 ? "" : "s"} affected.`);
 
     db.value.run(`
@@ -269,20 +269,121 @@ const migrate = () => {
     `);
 
     const scriptDataRows = db.value.getRowsModified();
-
     log(
-      `ScriptData: ${scriptDataRows} row${
-        scriptDataRows === 1 ? "" : "s"
-      } affected.`,
+      `ScriptData: ${scriptDataRows} row${scriptDataRows === 1 ? "" : "s"} affected.`,
+    );
+
+    const targetInvSize = target.extra?.inventorySize ?? 40;
+    const { scanned, updated } = migratePlayerInventories(
+      db.value,
+      targetInvSize,
+      log,
+    );
+    log(
+      `Inventory: ${scanned} player container(s) checked, ${updated} resized.`,
     );
 
     migrated.value = true;
-
     log("Migration completed successfully.");
   } catch (error) {
     migrated.value = false;
     log("Migration failed:", error);
   }
+};
+
+const decompressPlayerData = (compressed: Uint8Array): Uint8Array => {
+  const output = new Uint8Array(128);
+  const size = LZ4.decompressBlock(compressed, output, 0, compressed.length, 0);
+  return output.slice(0, size);
+};
+
+const getPlayerContainerIds = (db: any) => {
+  const result = db.exec(
+    "SELECT data FROM GenericData WHERE worldId = 65534 AND flags = 3 ORDER BY key ASC;",
+  );
+  if (!result.length) return [];
+
+  const entries = [];
+  for (const row of result[0].values) {
+    const raw = row[0] as unknown as Uint8Array;
+    if (!raw || raw.length < 0x1d) continue;
+
+    const compressedSize = raw[0x1c];
+    const compressed = raw.slice(0x1d, 0x1d + compressedSize);
+    const data = decompressPlayerData(compressed);
+    if (data.length < 0x42) continue;
+
+    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    const steamId64 = view.getBigUint64(0x2e, false);
+    const inventoryContainerId = view.getUint32(0x36, false);
+    const carryContainerId = view.getUint32(0x3a, false);
+
+    entries.push({ steamId64, inventoryContainerId, carryContainerId });
+  }
+  return entries;
+};
+
+const resizeContainerById = (db: any, id: any, targetSize: any, log: any) => {
+  const result = db.exec(`SELECT hex(data) FROM Container WHERE id = ${id};`);
+  if (!result.length || !result[0].values.length) {
+    log(`  Container ${id}: not found.`);
+    return false;
+  }
+
+  const hex = String(result[0].values[0][0]);
+  if (hex.length < 22) {
+    log(`  Container ${id}: data too short.`);
+    return false;
+  }
+
+  const currentSize = parseInt(hex.substring(14, 18), 16);
+  log(`  Container ${id}: current size ${currentSize}, target ${targetSize}.`);
+
+  if (!Number.isFinite(currentSize) || currentSize === targetSize) return false;
+
+  const header = hex.substring(0, 14);
+  const newSizeHex = targetSize.toString(16).padStart(4, "0");
+  const stackSize = hex.substring(18, 22);
+  const itemsLen = currentSize * 44;
+  const requiredLen = 22 + itemsLen;
+  if (requiredLen > hex.length) {
+    log(`  Container ${id}: data length mismatch, skipping.`);
+    return false;
+  }
+
+  const items = hex.substring(22, 22 + itemsLen);
+  const tail = hex.substring(22 + itemsLen);
+
+  const newItems =
+    targetSize > currentSize
+      ? items +
+        "00000000000000000000000000000000ffffffff0000".repeat(
+          targetSize - currentSize,
+        )
+      : items.substring(0, targetSize * 44);
+
+  const patchedHex = header + newSizeHex + stackSize + newItems + tail;
+  db.run(`UPDATE Container SET data = X'${patchedHex}' WHERE id = ${id};`);
+  return true;
+};
+
+const migratePlayerInventories = (db: any, targetSize: any, log: any) => {
+  const players = getPlayerContainerIds(db);
+  let updated = 0;
+
+  for (const player of players) {
+    log(`Player: ${player.steamId64.toString()}`);
+
+    if (resizeContainerById(db, player.inventoryContainerId, targetSize, log))
+      updated++;
+
+    if (player.carryContainerId !== 0xffffffff) {
+      if (resizeContainerById(db, player.carryContainerId, targetSize, log))
+        updated++;
+    }
+  }
+
+  return { scanned: players.length, updated };
 };
 
 const downloadMigratedSave = () => {
@@ -296,7 +397,7 @@ const downloadMigratedSave = () => {
     return;
   }
 
-  const data = db.value.export();
+  const data: any = db.value.export();
 
   const blob = new Blob([data], {
     type: "application/x-sqlite3",
@@ -379,7 +480,7 @@ const handleFile = async (file: File) => {
   migrated.value = false;
   logs.value = [];
 
-  const gameResult = db.value.exec(`
+  const gameResult: any = db.value.exec(`
     SELECT *
     FROM Game
     LIMIT 1
@@ -387,19 +488,29 @@ const handleFile = async (file: File) => {
 
   if (gameResult?.values[0]) {
     game.value = Object.fromEntries(
-      gameResult.columns.map((column, index) => [
+      gameResult.columns.map((column: any, index: string | number) => [
         column,
         gameResult.values[0][index],
       ]),
     ) as unknown as Game;
   }
 
-  const mods = parseMods(game.value?.mods);
+  const mods = parseMods(game.value?.mods ?? new Uint8Array());
 
   gamemode.value =
     GamemodeData.find((gamemode) =>
-      mods.some((mod) => gamemode.steamID === mod.fileId.toString()),
+      mods.some((mod) => gamemode.steamID.toString() === mod.fileId.toString()),
     ) ?? null;
+
+  if (
+    gamemode.value == null &&
+    mods.length === 0 &&
+    game.value &&
+    game.value.flags == 14
+  ) {
+    gamemode.value =
+      GamemodeData.find((gamemode) => gamemode.steamID === -1) ?? null;
+  }
 
   log(`Loaded save: ${file.name}`);
 
