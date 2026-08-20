@@ -1,75 +1,54 @@
-# Nuxt Minimal Starter
+# Scrap Mechanic Save Migrator
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A tool for migrating Scrap Mechanic saves between Custom Gamemodes and Vanilla.
 
-## Setup
+SQL editing method found by [taswin](https://discord.com/users/136620038516899840).
 
-Make sure to install dependencies:
+## 🌐 Web Version (Experimental)
 
-```bash
-# npm
-npm install
+Branch: [`web-experimental`](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/web-experimental)
 
-# pnpm
-pnpm install
+**No installation required.**
 
-# yarn
-yarn install
+[Open the Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)
 
-# bun
-bun install
-```
+---
 
-## Development Server
+## 🪟 Windows Version
 
-Start the development server on `http://localhost:3000`:
+Branch: [`windows`](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows)
 
-```bash
-# npm
-npm run dev
+**Requirements:** PowerShell
 
-# pnpm
-pnpm dev
+**Usage:**
 
-# yarn
-yarn dev
+1. [Download the ZIP](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/archive/refs/heads/windows.zip) and
+   extract it.
+2. Run `migrate.bat`.
+3. Follow the on-screen instructions.
 
-# bun
-bun run dev
-```
+Made by **[Linus (bicheslovesticks)](https://discord.com/users/278861825477574656)** from the Fant Mod Discord server.
 
-## Production
+---
 
-Build the application for production:
+## 🐧 Linux Version
+
+Branch: [`linux`](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux)
+
+**Requirements:** `bash`, `python3`, `curl`
+
+**Usage — run directly (recommended):**
 
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+bash <(curl -fsSL https://raw.githubusercontent.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/linux/migrate.sh)
 ```
 
-Locally preview production build:
+**Usage — from the repo:**
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+git clone -b linux https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator.git
+cd Scrap-Mechanic-Save-Migrator
+bash migrate.sh
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Follow the on-screen instructions.
