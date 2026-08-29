@@ -1,0 +1,317 @@
+@font-face {
+    font-family: 'Shentox';
+    src: url('/fonts/Shentox_Regular.otf') format('opentype');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'Shentox';
+    src: url('/fonts/Shentox_Medium.otf') format('opentype');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'Shentox';
+    src: url('/fonts/Shentox_SemiBold.otf') format('opentype');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'Shentox';
+    src: url('/fonts/Shentox_Bold.otf') format('opentype');
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('/fonts/Inter_Medium.otf') format('opentype');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'SM Tech Numbers';
+    src: url('/fonts/ScrapMechanic-TechNumbers.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'SM Display Numbers';
+    src: url('/fonts/SMDisplayNumbers.otf') format('opentype');
+}
+
+.sm-header-xlarge {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 24px;
+    letter-spacing: 1.33px;
+}
+
+.sm-header-large-wide {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 6px;
+}
+
+.sm-header-large-medium {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 2.67px;
+}
+
+.sm-header-large-narrow {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.67px;
+}
+
+.sm-header-medium {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 2px;
+}
+
+.sm-subheader {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 2px;
+}
+
+.sm-header {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 1.33px;
+}
+
+.sm-header-narrow {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 10px;
+}
+
+.sm-header-small {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 1.33px;
+}
+
+.sm-header-small-narrow {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 8px;
+}
+
+.sm-header-tiny {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 7px;
+}
+
+.sm-tab {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 9px;
+    letter-spacing: 1.33px;
+}
+
+.sm-tab-small {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 8px;
+    letter-spacing: 0.67px;
+}
+
+.sm-text-label {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 9px;
+}
+
+.sm-label {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 9px;
+    letter-spacing: 0.67px;
+}
+
+.sm-label-small {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 8px;
+    letter-spacing: 0.67px;
+}
+
+.sm-label-tiny {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 7px;
+    letter-spacing: 0.67px;
+}
+
+.sm-label-mini {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 6px;
+    letter-spacing: 0.67px;
+}
+
+.sm-slider-label {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 5px;
+    letter-spacing: 0.67px;
+}
+
+.sm-search-text {
+    font-family: 'Shentox';
+    font-weight: 400;
+    font-size: 10px;
+}
+
+.sm-tooltip-text {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 8px;
+}
+
+.sm-text-large {
+    font-family: 'Inter';
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.sm-text {
+    font-family: 'Inter';
+    font-weight: 500;
+    font-size: 10px;
+}
+
+.sm-text-desc {
+    font-family: 'Shentox';
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.sm-text-small {
+    font-family: 'Inter';
+    font-weight: 500;
+    font-size: 8px;
+}
+
+.sm-text-tiny {
+    font-family: 'Inter';
+    font-weight: 500;
+    font-size: 7px;
+}
+
+.sm-item-title {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.67px;
+}
+
+.sm-game-name {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.67px;
+}
+
+.sm-button-large {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.sm-button {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.67px;
+}
+
+.sm-button-small {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 8px;
+}
+
+.sm-button-tiny {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 7px;
+    letter-spacing: 0.67px;
+}
+
+.sm-button-small-bold {
+    font-family: 'Shentox';
+    font-weight: 700;
+    font-size: 8px;
+}
+
+.sm-number-huge {
+    font-family: 'Shentox';
+    font-weight: 400;
+    font-size: 21px;
+}
+
+.sm-number-small {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 7px;
+}
+
+.sm-number-tiny {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 7px;
+}
+
+.sm-number-mini {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 6px;
+}
+
+.sm-username {
+    font-family: 'Shentox';
+    font-weight: 400;
+    font-size: 8px;
+}
+
+.sm-list-item {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 9px;
+}
+
+.sm-hotbar-binding {
+    font-family: 'Shentox';
+    font-weight: 600;
+    font-size: 5px;
+}
+
+.sm-tech-numbers {
+    font-family: 'SM Tech Numbers';
+    font-size: 28px;
+}
+
+.sm-display-numbers {
+    font-family: 'SM Display Numbers';
+    font-size: 12px;
+}
+
+.sm-display-numbers-big {
+    font-family: 'SM Display Numbers';
+    font-size: 96px;
+}
+
+.sm-number-font {
+    font-family: 'SM Display Numbers';
+}
