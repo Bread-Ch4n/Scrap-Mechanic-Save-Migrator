@@ -1,71 +1,75 @@
 # Scrap Mechanic Save Migrator
 
-A tool for migrating **Scrap Mechanic Survival Saves** into **Fant Mod 3 Custom Gamemode Saves**
+Migrate **Scrap Mechanic Survival Saves** into **Fant Mod 3 Custom Gamemode Saves**.
 
-The SQL editing part was found by [taswin](https://discord.com/users/136620038516899840)
+The SQL editing technique behind this tool was found by [taswin](https://discord.com/users/136620038516899840).
 
-## 🌐 [Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)
+## Table of Contents
 
-**No installation required.**
-
-[Open the Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)
-
-### Requirements
-
-* None
+- [Web Version](#-web-version)
+- [Experimental Web Version](#-experimental-web-version)
+- [Windows Version](#-windows-version)
+- [Linux Version](#-linux-version)
 
 ---
 
-## 🪟 [Windows Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows)
+## 🌐 Web Version
 
-### Requirements
+**[Open the Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/)**
 
-* PowerShell
+No installation required.
 
-### Usage
-
-1. Open the **[Windows Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows)** repository.
-2. Click the green **Code** button.
-3. Select **Download ZIP** or press [here](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/archive/refs/heads/windows.zip).
-4. Extract the downloaded ZIP file.
-5. Run `migrate.bat`.
-6. Follow the instructions provided by the migration tool.
-
-The Windows version was made by **[Linus (bicheslovesticks)](https://discord.com/users/278861825477574656)** from the Fant Mod Discord server.
+**Requirements:** None
 
 ---
 
-## 🐧 [Linux Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux)
+## 🧪 Experimental Web Version
 
-### Requirements
+**[Open the Experimental Web Version](https://bread-ch4n.github.io/Scrap-Mechanic-Save-Migrator/experimental/)**
 
-* `bash`
-* `python3`
-* `curl`
+No installation required. Supports converting Vanilla saves into several Custom Gamemodes, as well as converting between different Custom Gamemodes.
+
+**Requirements:** None
+
+---
+
+## 🪟 Windows Version
+
+**Requirements:** PowerShell
 
 ### Usage
 
-#### Option 1 — Download the repository
+1. Open the [Windows Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/windows) branch.
+2. Click **Code** → **Download ZIP**, or download it directly [here](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/archive/refs/heads/windows.zip).
+3. Extract the ZIP file.
+4. Run `migrate.bat`.
+5. Follow the on-screen instructions.
 
-1. Open the **[Linux Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux)** repository.
-2. Click the green **Code** button.
-3. Select **Download ZIP** or press [here](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/archive/refs/heads/linux.zip).
-4. Extract the downloaded ZIP file.
-5. Open a terminal in the extracted folder.
-6. Run:
+Windows version by **[Linus (bicheslovesticks)](https://discord.com/users/278861825477574656)** from the Fant Mod Discord server.
 
-```bash
-bash migrate.sh
-```
+---
 
-7. Follow the instructions provided by the migration tool.
+## 🐧 Linux Version
 
-#### Option 2 — Run directly
+**Requirements:** `bash`, `python3`, `curl`
 
-You can run the migration tool without downloading or cloning the repository:
+### Option 1 — Download the repository
+
+1. Open the [Linux Version](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/tree/linux) branch.
+2. Click **Code** → **Download ZIP**, or download it directly [here](https://github.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/archive/refs/heads/linux.zip).
+3. Extract the ZIP file.
+4. Open a terminal in the extracted folder and run:
+
+   ```bash
+   bash migrate.sh
+   ```
+
+5. Follow the on-screen instructions.
+
+### Option 2 — Run directly (no download)
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/Bread-Ch4n/Scrap-Mechanic-Save-Migrator/linux/migrate.sh)
 ```
 
-Follow the instructions provided by the migration tool.
+Follow the on-screen instructions.
