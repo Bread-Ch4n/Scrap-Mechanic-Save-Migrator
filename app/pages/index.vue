@@ -254,7 +254,7 @@ const migrate = () => {
       UPDATE Game
       SET flags = ${target.extra?.flags ?? 15},
           mods = X'${target.mods}'
-      WHERE savegameversion = 28;
+      WHERE rowid = (SELECT MIN(rowid) FROM Game);
     `);
 
     const gameRows = db.value.getRowsModified();
