@@ -152,11 +152,10 @@ try:
     game_rows = cursor.rowcount
 
     cursor.execute("""
-        UPDATE ScriptData
-        SET uid = X'B6E35C9767BF5555A519A066E14A8C1E',
-            data = X'B6E35C9767BF5555A519A066E14A8C1E' || SUBSTR(data, 17)
-        WHERE uid = X'2C3699B2FD9C503EA405CF73434E2E88'
-          AND SUBSTR(data, 1, 16) = X'2C3699B2FD9C503EA405CF73434E2E88';
+        UPDATE Game
+        SET flags = 15,
+            mods = X'0000000100000000E0E1EF6B5C6453510B28F576470573F9A9361B19'
+        WHERE rowid = (SELECT MIN(rowid) FROM Game);
     """)
 
     scriptdata_rows = cursor.rowcount
