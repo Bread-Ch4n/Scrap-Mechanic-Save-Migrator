@@ -3,7 +3,7 @@
 #                By Linus and Gemini
 # =======================================================
 
-$Host.UI.RawUI.WindowTitle = "Scrap Mechanic Save Migration Tool"
+try { $Host.UI.RawUI.WindowTitle = "Scrap Mechanic Save Migration Tool" } catch { }
 
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition }
@@ -160,7 +160,7 @@ function Show-SaveMenu {
             Write-Host "  [2] Convert Existing Custom Game Save -> Fant Mod (from \Save\Custom\) " -NoNewline -ForegroundColor Yellow
             Write-Host "($custCount save(s))" -ForegroundColor Gray
             Write-Host "      * Intended for converting smaller, Vanilla+ / QoL Custom Games to Fant Mod 3" -ForegroundColor DarkGray
-			Write-Host "        (meaning no custom games that add new things, only tweaks to stuff)" -ForegroundColor DarkGray
+            Write-Host "        (meaning no custom games that add new things, only tweaks to stuff)" -ForegroundColor DarkGray
 
             Write-Host ""
             if ($groupedUsers.Count -gt 1) {
@@ -215,7 +215,7 @@ function Show-SaveMenu {
 
                 Write-Host "`n  [B] Back to conversion mode selection" -ForegroundColor Cyan
                 Write-Host "  [M] Manual input / Drag & Drop a .db file`n" -ForegroundColor White
-				Write-Host ""
+                Write-Host ""
                 Write-Host "  picking a file will not touch the original file in any way" -ForegroundColor Gray
                 Write-Host "  every edit on the selected file will be done on a copy`n" -ForegroundColor Gray
 
@@ -263,19 +263,19 @@ Write-Host "   Working copy created at: `"$tempSaveFile`"" -ForegroundColor Dark
 # 4. Execute Flag-Based SQL Migration on Temp File
 Write-Host "`n[2/3] Executing SQL Database Migration..." -ForegroundColor Gray
 
-# Step A: Update ScriptData GUID to Fant Mod 3
+# Step A: Update ScriptData GUID to Fant Mod 3 (safely formatted array)
 $tempSql = Join-Path $env:TEMP "sm_migrate_temp.sql"
-$sqlQueries = @"
-UPDATE ScriptData SET uid = X'B6E35C9767BF5555A519A066E14A8C1E' WHERE uid = X'2C3699B2FD9C503EA405CF73434E2E88';
-UPDATE ScriptData SET data = X'B6E35C9767BF5555A519A066E14A8C1E' || SUBSTR(data, 17) WHERE uid = X'B6E35C9767BF5555A519A066E14A8C1E' AND SUBSTR(data, 1, 16) = X'2C3699B2FD9C503EA405CF73434E2E88';
-"@
+$sqlQueries = @(
+    "UPDATE ScriptData SET uid = X'B6E35C9767BF5555A519A066E14A8C1E' WHERE uid = X'2C3699B2FD9C503EA405CF73434E2E88';"
+    "UPDATE ScriptData SET data = X'B6E35C9767BF5555A519A066E14A8C1E' || SUBSTR(data, 17) WHERE uid = X'B6E35C9767BF5555A519A066E14A8C1E' AND SUBSTR(data, 1, 16) = X'2C3699B2FD9C503EA405CF73434E2E88';"
+) -join "`n"
+
 Set-Content -Path $tempSql -Value $sqlQueries -Encoding UTF8
 Get-Content $tempSql | & $sqliteBin "$tempSaveFile"
 if (Test-Path $tempSql) { Remove-Item $tempSql }
 
 # Step B: Check original Game.flags before setting flag 15
-# Exact 24-byte (48 hex char) UGC Item for Fant Mod 3
-$fantUgcItemHex = "00000000E0E1EF6B5C6453510B28F576470573F9A9361B19" 
+$fantUgcItemHex = "00000000E0E1EF6B5C6453510B28F576470573F9A9361B19"
 
 try {
     $gameRow = & $sqliteBin "$tempSaveFile" "SELECT flags, hex(mods) FROM Game LIMIT 1;"
@@ -284,7 +284,6 @@ try {
         $existingModsHex = $Matches[2].Trim()
 
         if ([string]::IsNullOrWhiteSpace($existingModsHex) -or $existingModsHex -eq "00000000" -or $existingModsHex.Length -lt 8) {
-            # Empty / No mods -> Standard 1-Mod Array
             $newModsHex = "00000001" + $fantUgcItemHex
         } else {
             $countHex = $existingModsHex.Substring(0, 8)
@@ -292,12 +291,10 @@ try {
             $modCount = [System.Convert]::ToUInt32($countHex, 16)
 
             if ($origFlags -eq 15 -and $payload.Length -ge 48) {
-                # WAS A CUSTOM GAME SAVE (flags = 15): Overwrite Slot 0 (old Custom Game Mode)
                 $secondaryModsHex = $payload.Substring(48)
                 $newModsHex = $countHex + $fantUgcItemHex + $secondaryModsHex
                 Write-Host "   Custom Game save detected (flags=15): Replaced primary game mode UUID." -ForegroundColor Green
             } else {
-                # WAS A SURVIVAL SAVE (flags = 14): Prepend Fant Mod so NO B&P mods are lost
                 if ($payload -notlike "*$fantUgcItemHex*") {
                     $newCountHex = ($modCount + 1).ToString("X8")
                     $newModsHex  = $newCountHex + $fantUgcItemHex + $payload
@@ -308,12 +305,12 @@ try {
             }
         }
 
-        # Set flags = 15 and write updated mod payload
-        & $sqliteBin "$tempSaveFile" "UPDATE Game SET flags = 15, savegameversion = 28, mods = x'$newModsHex';"
+        # Set flags = 15 and write updated mod payload while keeping existing savegameversion
+        & $sqliteBin "$tempSaveFile" "UPDATE Game SET flags = 15, mods = x'$newModsHex';"
     }
 } catch {
     Write-Host "   [!] Failed to parse Game table. Applied default Fant Mod linkage." -ForegroundColor Yellow
-    & $sqliteBin "$tempSaveFile" "UPDATE Game SET flags = 15, savegameversion = 28, mods = x'00000001$fantUgcItemHex';"
+    & $sqliteBin "$tempSaveFile" "UPDATE Game SET flags = 15, mods = x'00000001$fantUgcItemHex';"
 }
 
 # 5. Scan and Rebuild Container BLOBs on Temp File

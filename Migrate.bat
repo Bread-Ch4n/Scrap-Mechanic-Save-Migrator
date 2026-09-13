@@ -1,1 +1,1 @@
-@powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0MigrateSave.ps1"
+@powershell -NoProfile -ExecutionPolicy Bypass -File "MigrateSave.ps1"
